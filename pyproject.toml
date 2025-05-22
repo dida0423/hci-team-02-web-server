@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "hci-team-02-web-server"
+version = "0.1.0"
+description = "Web server repo for HCI Spring 2025 Team 2"
+authors = ["dida0423 <didak0423@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+beautifulsoup4 = "^4.13.4"
+requests = "^2.32.3"
+openai = "^1.79.0"
+sqlalchemy = "^2.0.41"
+python-dotenv = "^1.1.0"
+psycopg2-binary = "^2.9.10"
+alembic = "^1.15.2"
+uvicorn = "^0.34.2"
+fastapi = "^0.115.12"
+selenium = "^4.32.0"
+webdriver-manager = "^4.0.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
