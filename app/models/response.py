@@ -23,7 +23,6 @@ class ArticleResponse(BaseModel):
     genre: str
     activity_score: int
     ranking: int
-    image_text: str | None
     author: AuthorResponse
 
 
