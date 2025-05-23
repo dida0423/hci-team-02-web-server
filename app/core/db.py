@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session, sessionmaker
 import sys
 import app.util.scraper
 from app.models.article import Article
-from app.models.author import Author, article_author_table
+from app.models.author import Author
 from app.models.press import Press
 import uuid
 from app.core.util import dotdict
@@ -96,6 +96,7 @@ if crawl_enabled and session:
         try:
             initialize_database(DB_NAME, DB_USER, DB_HOST, DB_PORT)
         except Exception as e:
+            print(f"Error initializing database: {e}")
             pass
 
         if article_json_path and press_id_json_path:
@@ -166,10 +167,12 @@ if crawl_enabled and session:
         session.add_all(
             Author(
                 name=author[0],
-                id=author[1],
+                id=str(author[1])+str(author[2]),
+                author_key=author[1],
                 press_id=author[2]
             ) for author in new_authors
         )
+        print(new_articles[0])
 
         print("Complete! \nInserting articles")
         session.add_all(
@@ -183,36 +186,18 @@ if crawl_enabled and session:
                 genre=a.genre,
                 activity_score=a.activity_score,
                 ranking=a.ranking,
+                author_id=str(a.author_id)+str(a.press_id),
+                press_id=a.press_id,
             ) for a in new_articles
         )
 
 
         print("Complete!\n Flushing...")
         session.flush()
-
-        print("Complete! \nInserting article_author")
-
-        # for a in new_articles:
-        #     print(a.id, a.author_id, a.press_id)
-
-        # print(new_articles[0])
-
-        session.execute(
-            article_author_table.insert().values(
-            [
-                {
-                    "article_id": a.id,
-                    "author_id": a.author_id,
-                    "press_id": a.press_id
-                }
-                for a in new_articles
-            ])
-        )
-
-        print("Committing...")
-        # Step 4: Bulk insert
         session.commit()
+
         print("Complete!")
+
     except Exception as e:
         print(f"Error during crawling: {e}")
         exit(-1)
