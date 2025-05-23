@@ -1,7 +1,7 @@
 from fastapi import FastAPI, APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from app.models.article import Article
-from app.models.author import Author, article_author_table
+from app.models.author import Author
 from app.models.press import Press
 from app.models.response import ArticleResponse
 import uuid
@@ -11,7 +11,7 @@ import json
 
 router = APIRouter(prefix="/article", tags=["article"])
 
-@router.get("/{page}", response_model=list[ArticleResponse])
+@router.get("/page{page}", response_model=list[ArticleResponse])
 def get_articles(page: int, db: SessionDep):
     """
     Get article by id

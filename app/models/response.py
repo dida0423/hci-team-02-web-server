@@ -4,12 +4,12 @@ from typing import List
 import uuid
 
 class PressResponse(BaseModel):
-    id: int
+    id: str
     name: str
     logo_img_src: str
 
 class AuthorResponse(BaseModel):
-    id: int
+    id: str
     name: str
     press: PressResponse
 
@@ -23,9 +23,7 @@ class ArticleResponse(BaseModel):
     genre: str
     activity_score: int
     ranking: int
-    image_text: str | None
     author: AuthorResponse
-    press: PressResponse
 
 
     class Config:
