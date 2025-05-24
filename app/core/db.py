@@ -10,9 +10,12 @@ import app.util.scraper
 from app.models.article import Article
 from app.models.author import Author
 from app.models.press import Press
+from app.models.newschat import NewsChat
 import uuid
 from app.core.util import dotdict
 import json
+from typing import List
+from app.util.AI import generate_chat
 
 crawl_enabled = os.getenv("CRAWL", "false").lower() == "true"
 db_init_enabled = os.getenv("DB", "false").lower() == "true"
@@ -28,6 +31,7 @@ DB_USER = os.getenv("DB_USER") or "user"
 DB_HOST = os.getenv("DB_HOST") or "localhost"
 DB_PORT = os.getenv("DB_PORT") or "5432"
 DB_DRIVER = os.getenv("DB_DRIVER") or "postgresql+psycopg2"
+API_KEY = os.getenv("API_KEY")
 
 SQLALCHEMY_DATABASE_URI = f"{DB_DRIVER}://{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
@@ -74,6 +78,21 @@ def initialize_database(DB_NAME: str, DB_USER: str, DB_HOST: str, DB_PORT: str) 
     finally:
         cursor.close()
         conn.close()
+
+def create_news_chat(article: Article, session: Session) -> List[NewsChat]:
+    """
+    Create a new news chat entry in the database.
+    """
+    chat_list = generate_chat(article, API_KEY=API_KEY)
+
+    try:
+        session.add_all(chat_list)
+        session.commit()
+    except Exception as e:
+        print(f"Error creating news chat: {e}")
+        session.rollback()
+
+    return chat_list
 
 if db_init_enabled:
     try:
@@ -198,6 +217,8 @@ if crawl_enabled and session:
 
         print("Complete!")
 
+        crawl_enabled = False
+
     except Exception as e:
         print(f"Error during crawling: {e}")
         exit(-1)
@@ -207,3 +228,5 @@ if session:
         session.close()
     except Exception as e:
         print(f"Error closing session: {e}")
+
+
