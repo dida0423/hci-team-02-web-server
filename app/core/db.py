@@ -24,17 +24,18 @@ load_dotenv()
 
 # Check if the environment variables are set for prod
 DB_NAME = os.getenv("DB_NAME") or "hcidb"
-DB_USER = os.getenv("DB_USER") or "user"
+DB_USER = os.getenv("DB_USER") or "postgres"
 DB_HOST = os.getenv("DB_HOST") or "localhost"
 DB_PORT = os.getenv("DB_PORT") or "5432"
 DB_DRIVER = os.getenv("DB_DRIVER") or "postgresql+psycopg2"
+DB_PASSWORD = os.getenv("DB_PASSWORD") or "postgres"
 
-SQLALCHEMY_DATABASE_URI = f"{DB_DRIVER}://{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+SQLALCHEMY_DATABASE_URI = f"{DB_DRIVER}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 
-def initialize_database(DB_NAME: str, DB_USER: str, DB_HOST: str, DB_PORT: str) -> None:
+def initialize_database(DB_NAME: str, DB_USER: str, DB_PASSWORD: str, DB_HOST: str, DB_PORT: str) -> None:
     # Connect to default 'postgres' database
-    conn = psycopg2.connect(dbname="postgres", user=DB_USER, host=DB_HOST, port=DB_PORT)
+    conn = psycopg2.connect(dbname="postgres", user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT)
     conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)  # Needed to CREATE DATABASE
 
     cursor = conn.cursor()
@@ -45,6 +46,9 @@ def initialize_database(DB_NAME: str, DB_USER: str, DB_HOST: str, DB_PORT: str) 
         print(f"Database '{DB_NAME}' created.")
     except psycopg2.errors.DuplicateDatabase:
         print(f"Database '{DB_NAME}' already exists.")
+    except Exception as e:
+        print(f"Error creating database: {e}")
+        sys.exit(1)
     try:
         subprocess.run(
             [
@@ -77,7 +81,7 @@ def initialize_database(DB_NAME: str, DB_USER: str, DB_HOST: str, DB_PORT: str) 
 
 if db_init_enabled:
     try:
-        initialize_database(DB_NAME, DB_USER, DB_HOST, DB_PORT)
+        initialize_database(DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT)
     except Exception as e:
         pass
 
@@ -94,7 +98,7 @@ except Exception as e:
 if crawl_enabled and session:
     try:
         try:
-            initialize_database(DB_NAME, DB_USER, DB_HOST, DB_PORT)
+            initialize_database(DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT)
         except Exception as e:
             pass
 
