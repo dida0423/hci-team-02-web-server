@@ -24,27 +24,48 @@ load_dotenv()
 
 # Check if the environment variables are set for prod
 DB_NAME = os.getenv("DB_NAME") or "hcidb"
-DB_USER = os.getenv("DB_USER") or "user"
+DB_USER = os.getenv("DB_USER") or "postgres"
 DB_HOST = os.getenv("DB_HOST") or "localhost"
 DB_PORT = os.getenv("DB_PORT") or "5432"
 DB_DRIVER = os.getenv("DB_DRIVER") or "postgresql+psycopg2"
 
-SQLALCHEMY_DATABASE_URI = f"{DB_DRIVER}://{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+SQLALCHEMY_DATABASE_URI = f"{DB_DRIVER}://{DB_USER}:@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 
 def initialize_database(DB_NAME: str, DB_USER: str, DB_HOST: str, DB_PORT: str) -> None:
-    # Connect to default 'postgres' database
-    conn = psycopg2.connect(dbname="postgres", user=DB_USER, host=DB_HOST, port=DB_PORT)
-    conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)  # Needed to CREATE DATABASE
+    # conn = psycopg2.connect(dbname="postgres", user=DB_USER, host=DB_HOST, port=DB_PORT)
+    # conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)  # Needed to CREATE DATABASE
 
-    cursor = conn.cursor()
+    # cursor = conn.cursor()
     try:
-        cursor.execute(f"DROP DATABASE IF EXISTS {DB_NAME};")
-        print(f"Database '{DB_NAME}' dropped.")
-        cursor.execute(f"CREATE DATABASE {DB_NAME};")
-        print(f"Database '{DB_NAME}' created.")
-    except psycopg2.errors.DuplicateDatabase:
-        print(f"Database '{DB_NAME}' already exists.")
+        subprocess.run(
+            [
+                "psql",
+                "-U", DB_USER,
+                "-h", DB_HOST,
+                "-p", DB_PORT,
+                "-d", "postgres",
+                "-v", "ON_ERROR_STOP=1",
+                "-c", f"DROP DATABASE IF EXISTS {DB_NAME};"
+            ],
+            check=True
+        )
+        subprocess.run(
+            [
+                "psql",
+                "-U", DB_USER,
+                "-h", DB_HOST,
+                "-p", DB_PORT,
+                "-d", "postgres",
+                "-v", "ON_ERROR_STOP=1",
+                "-c", f"CREATE DATABASE {DB_NAME};"
+            ],
+            check=True
+        )
+        
+    except Exception as e:
+        print(f"Error creating database: {e}")
+        exit(-1)
     try:
         subprocess.run(
             [
@@ -71,9 +92,9 @@ def initialize_database(DB_NAME: str, DB_USER: str, DB_HOST: str, DB_PORT: str) 
         ], check=True)
     except subprocess.CalledProcessError as e:
         print(f"Error running alembic revision: {e}")
-    finally:
-        cursor.close()
-        conn.close()
+    # finally:
+    #     cursor.close()
+    #     conn.close()
 
 if db_init_enabled:
     try:
