@@ -11,11 +11,15 @@ from app.models.article import Article
 from app.models.author import Author
 from app.models.press import Press
 from app.models.newschat import NewsChat
+from app.models.keyword import KeywordSummary
+from app.models.highlight import HighlightedArticle
 import uuid
 from app.core.util import dotdict
 import json
 from typing import List
-from app.util.AI import generate_chat
+from app.util.AI import generate_chat, generate_highlighted_article, generate_keywords
+from datetime import datetime
+
 
 crawl_enabled = os.getenv("CRAWL", "false").lower() == "true"
 db_init_enabled = os.getenv("DB", "false").lower() == "true"
@@ -33,12 +37,14 @@ DB_PORT = os.getenv("DB_PORT") or "5432"
 DB_DRIVER = os.getenv("DB_DRIVER") or "postgresql+psycopg2"
 API_KEY = os.getenv("API_KEY")
 
-SQLALCHEMY_DATABASE_URI = f"{DB_DRIVER}://{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+DB_PASSWORD = os.getenv("DB_PASSWORD") or "postgres"
+
+SQLALCHEMY_DATABASE_URI = f"{DB_DRIVER}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 
-def initialize_database(DB_NAME: str, DB_USER: str, DB_HOST: str, DB_PORT: str) -> None:
+def initialize_database(DB_NAME: str, DB_USER: str, DB_PASSWORD: str, DB_HOST: str, DB_PORT: str) -> None:
     # Connect to default 'postgres' database
-    conn = psycopg2.connect(dbname="postgres", user=DB_USER, host=DB_HOST, port=DB_PORT)
+    conn = psycopg2.connect(dbname="postgres", user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT)
     conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)  # Needed to CREATE DATABASE
 
     cursor = conn.cursor()
@@ -94,9 +100,46 @@ def create_news_chat(article: Article, session: Session) -> List[NewsChat]:
 
     return chat_list
 
+def create_keyword_summary(titles: List[str], session: Session) -> dict:
+    today = datetime.now().date()
+    existing = session.query(KeywordSummary).filter(KeywordSummary.date == today).first()
+
+    if existing:
+        return existing.keywords
+    
+    result = generate_keywords(titles, API_KEY)
+    keyword_entry = KeywordSummary(date=today, keywords=result)
+
+    try:
+        session.add(keyword_entry)
+        session.commit()
+    except Exception as e:
+        print(f"Error saving keywords: {e}")
+        session.rollback()
+
+    return result
+
+def create_highlighted_article(article: Article, session: Session) -> str:
+    existing = session.query(HighlightedArticle).filter(HighlightedArticle.article_id == article.id).first()
+    if existing:
+        return existing.highlighted_text
+    
+    highlighted_text = generate_highlighted_article(article, API_KEY)
+
+    new_entry = HighlightedArticle(article_id=article.id, highlighted_text=highlighted_text)
+
+    try:
+        session.add(new_entry)
+        session.commit()
+    except Exception as e:
+        print(f"Error saving highlighted article: {e}")
+        session.rollback()
+
+    return highlighted_text
+
 if db_init_enabled:
     try:
-        initialize_database(DB_NAME, DB_USER, DB_HOST, DB_PORT)
+        initialize_database(DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT)
     except Exception as e:
         pass
 
@@ -113,7 +156,7 @@ except Exception as e:
 if crawl_enabled and session:
     try:
         try:
-            initialize_database(DB_NAME, DB_USER, DB_HOST, DB_PORT)
+            initialize_database(DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT)
         except Exception as e:
             print(f"Error initializing database: {e}")
             pass

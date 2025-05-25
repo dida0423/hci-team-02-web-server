@@ -6,7 +6,9 @@ import uuid
 from app.api.deps import SessionDep
 from sqlalchemy import select
 import json
-from app.core.db import create_news_chat
+from app.core.db import create_news_chat, create_keyword_summary, create_highlighted_article
+from typing import List
+from fastapi import Body
 
 router = APIRouter(prefix="/article", tags=["article"])
 
@@ -80,3 +82,24 @@ def get_article_summary(id: uuid.UUID, session: SessionDep):
     
     return article
 
+@router.post("/keywords")
+def get_today_keywords(session: SessionDep, titles: List[str] = Body(...)):
+    try:
+        result = create_keyword_summary(titles, session)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Keyword generation failed: {e}")
+    return result
+
+
+@router.get("/highlight/{id}")
+def get_highlighted_article(id: uuid.UUID, session: SessionDep):
+    article = session.query(Article).filter(Article.id == id).first()
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+    
+    try:
+        highlighted = create_highlighted_article(article, session)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Highlight generation failed: {e}")
+    
+    return {"highlighted": highlighted}
