@@ -30,8 +30,6 @@ def get_articles(page: int, session: SessionDep):
 
     return articles
 
-
-
 @router.get("/{id}")
 def get_article(id: uuid.UUID, session: SessionDep):
     """
@@ -71,8 +69,6 @@ def get_article_summary(id: uuid.UUID, session: SessionDep):
 
     chat_lines = session.execute(retrieve_statement).scalars().all()
 
-    
-    
     if not chat_lines:
         print("generating summary")
         create_news_chat(article, session)
@@ -82,15 +78,16 @@ def get_article_summary(id: uuid.UUID, session: SessionDep):
     
     return article
 
+# 오늘의 키워드
 @router.post("/keywords")
-def get_today_keywords(session: SessionDep, titles: List[str] = Body(...)):
+def get_today_keywords(session: SessionDep):
     try:
-        result = create_keyword_summary(titles, session)
+        result = create_keyword_summary(session)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Keyword generation failed: {e}")
     return result
 
-
+# 집중 읽기 모드
 @router.get("/highlight/{id}")
 def get_highlighted_article(id: uuid.UUID, session: SessionDep):
     article = session.query(Article).filter(Article.id == id).first()

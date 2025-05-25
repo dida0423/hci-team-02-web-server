@@ -18,7 +18,7 @@ from app.core.util import dotdict
 import json
 from typing import List
 from app.util.AI import generate_chat, generate_highlighted_article, generate_keywords
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 crawl_enabled = os.getenv("CRAWL", "false").lower() == "true"
@@ -100,19 +100,33 @@ def create_news_chat(article: Article, session: Session) -> List[NewsChat]:
 
     return chat_list
 
-def create_keyword_summary(titles: List[str], session: Session) -> dict:
-    today = datetime.now().date()
+def create_keyword_summary(session: Session) -> dict:
+    now = datetime.now()
+    start_time = now - timedelta(hours=24)
+
+    # 24시간 이내 기사 제목 수집
+    #titles = session.query(Article.title).filter(Article.published_at >= start_time).all()
+    titles = session.query(Article.title).all()
+    titles = [t[0] for t in titles]
+
+    if not titles:
+        return {"error": "No recent articles found."}
+
+    today = now.date()
     existing = session.query(KeywordSummary).filter(KeywordSummary.date == today).first()
 
     if existing:
+        print("[DEBUG] 오늘 키워드 이미 존재")
         return existing.keywords
-    
+
     result = generate_keywords(titles, API_KEY)
+
     keyword_entry = KeywordSummary(date=today, keywords=result)
 
     try:
         session.add(keyword_entry)
         session.commit()
+        print("[DEBUG] DB 저장 완료")
     except Exception as e:
         print(f"Error saving keywords: {e}")
         session.rollback()
