@@ -120,3 +120,49 @@ def generate_highlighted_article(article: Article, API_KEY) -> str:
     )
 
     return response.choices[0].message.content.strip()
+
+def detect_article_bias(media_name: str, content: str, API_KEY: str) -> dict:
+    from openai import OpenAI
+    import ast
+
+    client = OpenAI(api_key=API_KEY)
+
+    prompt = f"""
+다음은 특정 언론사가 보도한 뉴스 기사입니다.
+이 기사에서 등장하는 인물이나 기관의 발언 내용은 판단 대상이 아닙니다.
+
+당신의 임무는 해당 언론사가 가진 정치적 성향에 따라, 이 기사의 편집 방식(표현, 강조, 묘사 등)이 그 성향과 일치하는 편향을 보여주는지 평가하는 것입니다.
+
+기준:
+
+- 감정적인 단어, 주관적인 논평, 일방적 강조 등이 사용되었는가?
+- 그 편향이 해당 언론사의 성향과 일치하는 방향인가?
+
+결과는 다음과 같은 JSON 형식으로 출력하세요:
+
+{{
+"media_bias": "보수 / 진보 / 중도",
+"reporting_bias": "있음 / 없음"
+}}
+
+언론사: {media_name}
+기사:
+\"\"\"
+{content}
+\"\"\"
+"""
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are a political bias evaluator."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    content = response.choices[0].message.content.strip().replace("```json", "").replace("```", "")
+    try:
+        return ast.literal_eval(content)
+    except Exception as e:
+        print("[ERROR] Failed to parse bias response:\n", content)
+        raise e

@@ -6,7 +6,7 @@ import uuid
 from app.api.deps import SessionDep
 from sqlalchemy import select
 import json
-from app.core.db import create_news_chat, create_keyword_summary, create_highlighted_article
+from app.core.db import create_news_chat, create_keyword_summary, create_highlighted_article, update_article_bias
 from typing import List
 from fastapi import Body
 
@@ -100,3 +100,18 @@ def get_highlighted_article(id: uuid.UUID, session: SessionDep):
         raise HTTPException(status_code=500, detail=f"Highlight generation failed: {e}")
     
     return {"highlighted": highlighted}
+
+# 편향
+@router.get("/bias/{id}")
+def get_article_bias(id: uuid.UUID, session: SessionDep):
+    article = session.query(Article).filter(Article.id == id).first()
+
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+
+    try:
+        result = update_article_bias(article, session)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Bias detection failed: {e}")
+
+    return result

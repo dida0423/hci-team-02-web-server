@@ -17,7 +17,7 @@ import uuid
 from app.core.util import dotdict
 import json
 from typing import List
-from app.util.AI import generate_chat, generate_highlighted_article, generate_keywords
+from app.util.AI import generate_chat, generate_highlighted_article, generate_keywords, detect_article_bias
 from datetime import datetime, timedelta
 
 
@@ -100,6 +100,7 @@ def create_news_chat(article: Article, session: Session) -> List[NewsChat]:
 
     return chat_list
 
+# 오늘의 키워드
 def create_keyword_summary(session: Session) -> dict:
     now = datetime.now()
     start_time = now - timedelta(hours=24)
@@ -133,6 +134,7 @@ def create_keyword_summary(session: Session) -> dict:
 
     return result
 
+# 집중 읽기 모드
 def create_highlighted_article(article: Article, session: Session) -> str:
     existing = session.query(HighlightedArticle).filter(HighlightedArticle.article_id == article.id).first()
     if existing:
@@ -150,6 +152,32 @@ def create_highlighted_article(article: Article, session: Session) -> str:
         session.rollback()
 
     return highlighted_text
+
+# 편향 감지
+def update_article_bias(article: Article, session: Session) -> dict:
+    # 정치 기사 확인
+    if article.genre != "정치":
+        return {"media_bias": None, "reporting_bias": None}
+    
+    if article.media_bias is not None and article.reporting_bias is not None:
+        return {"media_bias": article.media_bias, "reporting_bias": article.reporting_bias}
+
+    media_name = article.press.name
+    content = article.content
+
+    bias_result = detect_article_bias(media_name, content, API_KEY)
+
+    article.media_bias = bias_result["media_bias"]
+    article.reporting_bias = bias_result["reporting_bias"]
+
+    try:
+        session.commit()
+        print("[DEBUG] 기사 편향 정보 업데이트 완료")
+    except Exception as e:
+        print(f"[ERROR] 편향 정보 업데이트 실패: {e}")
+        session.rollback()
+
+    return bias_result
 
 if db_init_enabled:
     try:
