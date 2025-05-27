@@ -29,6 +29,9 @@ class Article(Base):
     story_original = Column(String, nullable=True)
     author = relationship("Author", back_populates="articles")
     press = relationship("Press", back_populates="articles")
+    
+    media_bias = Column(String(10), nullable=True)
+    reporting_bias = Column(String(10), nullable=True)
 
     chat_lines = relationship("NewsChat", back_populates="article")
 
