@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import List, Optional
+from typing import List
 import uuid
 
 class PressResponse(BaseModel):
@@ -13,14 +13,6 @@ class AuthorResponse(BaseModel):
     name: str
     press: PressResponse
 
-class NewsChatResponse(BaseModel):
-    id: uuid.UUID
-    speaker: int
-    speaker_name: str
-    content: str
-    order: int
-
-
 class ArticleResponse(BaseModel):
     id: uuid.UUID
     title: str
@@ -32,9 +24,6 @@ class ArticleResponse(BaseModel):
     activity_score: int
     ranking: int
     author: AuthorResponse
-    story_summary: Optional[str]
-    story_original: Optional[str]
-    chat_lines: Optional[List[NewsChatResponse]]
 
 
     class Config:

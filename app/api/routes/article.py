@@ -1,17 +1,18 @@
 from fastapi import FastAPI, APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
-from app.models import NewsChat, Author, Article, Press
+from app.models.article import Article
+from app.models.author import Author
+from app.models.press import Press
 from app.models.response import ArticleResponse
 import uuid
 from app.api.deps import SessionDep
 from sqlalchemy import select
 import json
-from app.core.db import create_news_chat
 
 router = APIRouter(prefix="/article", tags=["article"])
 
 @router.get("/page{page}", response_model=list[ArticleResponse])
-def get_articles(page: int, session: SessionDep):
+def get_articles(page: int, db: SessionDep):
     """
     Get article by id
     """
@@ -19,7 +20,7 @@ def get_articles(page: int, session: SessionDep):
     if page < 0 or page > 3:
         raise HTTPException(status_code=400, detail="Page must be between 1 and 4")
     # select all articles with authors and press
-    articles = session.query(Article).options(
+    articles = db.query(Article).options(
         joinedload(Article.author).joinedload(Author.press)
     ).offset(page * 10).limit(10).all()
 
@@ -31,7 +32,7 @@ def get_articles(page: int, session: SessionDep):
 
 
 @router.get("/{id}")
-def get_article(id: uuid.UUID, session: SessionDep):
+def get_article(id: uuid.UUID, db: SessionDep):
     """
     Get article by id
     """
@@ -40,43 +41,10 @@ def get_article(id: uuid.UUID, session: SessionDep):
         .where(Article.id == id)
     )
 
-    article = session.execute(retrieve_statement).scalars().first()
+    article = db.execute(retrieve_statement).scalars().first()
 
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
-    
-    return article
-
-@router.get("/view/{id}", response_model=ArticleResponse)
-def get_article_summary(id: uuid.UUID, session: SessionDep):
-    """
-    Get article summary by id
-    """
-    retrieve_statement = (
-        select(Article)
-        .where(Article.id == id)
-    )
-
-    article = session.execute(retrieve_statement).scalars().first()
-
-    if not article:
-        raise HTTPException(status_code=404, detail="Article not found")
-    
-    retrieve_statement = (
-        select(NewsChat)
-        .where(NewsChat.article_id == id)
-    )
-
-    chat_lines = session.execute(retrieve_statement).scalars().all()
-
-    
-    
-    if not chat_lines:
-        print("generating summary")
-        create_news_chat(article, session)
-        session.refresh(article)
-    else:
-        print("summary found!")
     
     return article
 
