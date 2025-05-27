@@ -6,7 +6,7 @@ import uuid
 from app.api.deps import SessionDep
 from sqlalchemy import select
 import json
-from app.core.db import create_news_chat
+from app.core.db import create_news_chat, create_summary
 
 router = APIRouter(prefix="/article", tags=["article"])
 
@@ -68,8 +68,6 @@ def get_article_summary(id: uuid.UUID, session: SessionDep):
     )
 
     chat_lines = session.execute(retrieve_statement).scalars().all()
-
-    
     
     if not chat_lines:
         print("generating summary")
@@ -77,6 +75,15 @@ def get_article_summary(id: uuid.UUID, session: SessionDep):
         session.refresh(article)
     else:
         print("summary found!")
-    
-    return article
+
+    if not article.story_summary:
+        print("generating story summary")
+        create_summary(article, session)    
+        session.refresh(article)
+    try:
+        return article
+    except Exception as e:
+        print("!!!!!!")
+        print(f"Error retrieving article summary: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 

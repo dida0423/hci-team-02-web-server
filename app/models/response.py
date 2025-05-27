@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from datetime import datetime
 from typing import List, Optional
-import uuid
+import uuid, json
 
 class PressResponse(BaseModel):
     id: str
@@ -20,6 +20,10 @@ class NewsChatResponse(BaseModel):
     content: str
     order: int
 
+class StorySummaryResponse(BaseModel):
+    id: uuid.UUID
+    story: str
+    dictionary: dict
 
 class ArticleResponse(BaseModel):
     id: uuid.UUID
@@ -32,9 +36,8 @@ class ArticleResponse(BaseModel):
     activity_score: int
     ranking: int
     author: AuthorResponse
-    story_summary: Optional[str]
-    story_original: Optional[str]
     chat_lines: Optional[List[NewsChatResponse]]
+    story_summary: StorySummaryResponse | None = None
 
 
     class Config:

@@ -15,7 +15,7 @@ import uuid
 from app.core.util import dotdict
 import json
 from typing import List
-from app.util.AI import generate_chat
+from app.util.AI import generate_chat, generate_narrative
 
 crawl_enabled = os.getenv("CRAWL", "false").lower() == "true"
 db_init_enabled = os.getenv("DB", "false").lower() == "true"
@@ -23,7 +23,7 @@ article_json_path = os.getenv("ARTICLE_JSON_PATH", None)
 press_id_json_path = os.getenv("PRESS_ID_JSON_PATH", None)
 
 
-load_dotenv()
+load_dotenv(override=True)
 
 # Check if the environment variables are set for prod
 DB_NAME = os.getenv("DB_NAME") or "hcidb"
@@ -93,6 +93,21 @@ def create_news_chat(article: Article, session: Session) -> List[NewsChat]:
         session.rollback()
 
     return chat_list
+
+def create_summary(article: Article, session: Session) -> Article:
+    """
+    Create a summary for the article.
+    """
+    try:
+        story_summary = generate_narrative(article, API_KEY=API_KEY)
+        session.add(story_summary)
+        session.commit()
+    except Exception as e:
+        print("!!!!!")
+        print(f"Error creating summary: {e}")
+        session.rollback()
+
+    return article
 
 if db_init_enabled:
     try:
@@ -207,6 +222,7 @@ if crawl_enabled and session:
                 ranking=a.ranking,
                 author_id=str(a.author_id)+str(a.press_id),
                 press_id=a.press_id,
+                story_summary=None
             ) for a in new_articles
         )
 

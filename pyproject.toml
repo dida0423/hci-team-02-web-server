@@ -5,6 +5,10 @@ description = "Web server repo for HCI Spring 2025 Team 2"
 authors = ["dida0423 <didak0423@gmail.com>"]
 readme = "README.md"
 
+packages = [
+    { include = "app" }
+]
+
 [tool.poetry.dependencies]
 python = "^3.12"
 beautifulsoup4 = "^4.13.4"

@@ -25,12 +25,11 @@ class Article(Base):
     genre = Column(String, nullable=False, default="")
     author_id = Column(String, ForeignKey('authors.id'), nullable=False)
     press_id = Column(String, ForeignKey('press.id'), nullable=False)
-    story_summary = Column(String, nullable=True)
-    story_original = Column(String, nullable=True)
     author = relationship("Author", back_populates="articles")
     press = relationship("Press", back_populates="articles")
 
     chat_lines = relationship("NewsChat", back_populates="article")
+    story_summary = relationship("StorySummary", back_populates="article", uselist=False)
 
     def __repr__(self):
         return f"<Article(id={self.id}, title={self.title}, url={self.url})>"
