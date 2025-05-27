@@ -18,8 +18,8 @@ from app.core.util import dotdict
 import json
 from typing import List
 
-from app.util.AI import generate_chat, generate_highlighted_article, generate_keywords, detect_article_bias
-from datetime import datetime, timedelta, generate_narrative
+from app.util.AI import generate_chat, generate_narrative, generate_highlighted_article, generate_keywords, detect_article_bias
+from datetime import datetime, timedelta
 
 crawl_enabled = os.getenv("CRAWL", "false").lower() == "true"
 db_init_enabled = os.getenv("DB", "false").lower() == "true"
