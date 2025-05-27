@@ -27,7 +27,7 @@ article_json_path = os.getenv("ARTICLE_JSON_PATH", None)
 press_id_json_path = os.getenv("PRESS_ID_JSON_PATH", None)
 
 
-load_dotenv()
+load_dotenv(override=True)
 
 # Check if the environment variables are set for prod
 DB_NAME = os.getenv("DB_NAME") or "hcidb"
