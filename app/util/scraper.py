@@ -117,6 +117,7 @@ def extract_data(soup: _bs4.BeautifulSoup) -> tuple[list, list]:
             title = title_tag.get_text(strip=True)
             url = title_tag.get("href")
         else:
+            print("No title or URL found for item.")
             continue
 
         press_id = str(url)[33:36]
@@ -125,6 +126,8 @@ def extract_data(soup: _bs4.BeautifulSoup) -> tuple[list, list]:
         content_tag = article_soup.find('article', id="dic_area")
 
         if not content_tag or not isinstance(content_tag, _bs4.element.Tag):
+            print("No content found for article.")
+            print(url)
             continue
 
 
@@ -138,6 +141,8 @@ def extract_data(soup: _bs4.BeautifulSoup) -> tuple[list, list]:
         if published_at_tag and published_at_tag.has_attr("data-date-time"):
             published_at = published_at_tag["data-date-time"]
         else:
+            print("No published date found for article.")
+            print(url)
             continue
 
         edited_at_tag = article_soup.select_one("span._ARTICLE_MODIFY_DATE_TIME")
@@ -178,6 +183,8 @@ def extract_data(soup: _bs4.BeautifulSoup) -> tuple[list, list]:
                 
         author_tag = article_soup.find('em', class_='media_journalistcard_summary_name_text')
         if not author_tag:
+            print("No author found for article.")
+            print(url)
             continue
 
         
@@ -188,11 +195,15 @@ def extract_data(soup: _bs4.BeautifulSoup) -> tuple[list, list]:
             author_id = str(author_url)[39:]
             press_id = str(author_url)[35:38]
         else:
+            print("No author URL found for article.")
+            print(url)
             continue
 
         if isinstance(like_count, int) and isinstance(comment_count, int):
             activity_score = like_count + comment_count * 2
+            print(f"Activity Score: {activity_score}")
         else:
+            print("Error: Like or comment count is not an integer.")
             activity_score = 0
 
         news_items.append({

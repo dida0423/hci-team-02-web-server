@@ -1,8 +1,6 @@
 from fastapi import FastAPI, APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
-from app.models.article import Article
-from app.models.author import Author
-from app.models.press import Press
+from app.models import Article, Author, Press, NewsChat
 from app.models.response import ArticleResponse
 import uuid
 from app.api.deps import SessionDep
@@ -25,7 +23,7 @@ def get_articles(page: int, db: SessionDep):
     # select all articles with authors and press
     articles = db.query(Article).options(
         joinedload(Article.author).joinedload(Author.press)
-    ).offset(page * 10).limit(10).all()
+    ).order_by(Article.activity_score.desc()).offset(page * 10).limit(10).all()
 
     for article in articles:
         print(article)
