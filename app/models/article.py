@@ -31,6 +31,7 @@ class Article(Base):
     reporting_bias = Column(String(10), nullable=True)
 
     chat_lines = relationship("NewsChat", back_populates="article")
+    story_summary = relationship("StorySummary", back_populates="article", uselist=False)
 
     def __repr__(self):
         return f"<Article(id={self.id}, title={self.title}, url={self.url})>"

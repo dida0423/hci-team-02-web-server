@@ -17,9 +17,9 @@ import uuid
 from app.core.util import dotdict
 import json
 from typing import List
-from app.util.AI import generate_chat, generate_highlighted_article, generate_keywords, detect_article_bias
-from datetime import datetime, timedelta
 
+from app.util.AI import generate_chat, generate_highlighted_article, generate_keywords, detect_article_bias
+from datetime import datetime, timedelta, generate_narrative
 
 crawl_enabled = os.getenv("CRAWL", "false").lower() == "true"
 db_init_enabled = os.getenv("DB", "false").lower() == "true"
@@ -100,6 +100,21 @@ def create_news_chat(article: Article, session: Session) -> List[NewsChat]:
         session.rollback()
 
     return chat_list
+
+def create_summary(article: Article, session: Session) -> Article:
+    """
+    Create a summary for the article.
+    """
+    try:
+        story_summary = generate_narrative(article, API_KEY=API_KEY)
+        session.add(story_summary)
+        session.commit()
+    except Exception as e:
+        print("!!!!!")
+        print(f"Error creating summary: {e}")
+        session.rollback()
+
+    return article
 
 # 오늘의 키워드
 def create_keyword_summary(session: Session) -> dict:
@@ -293,6 +308,7 @@ if crawl_enabled and session:
                 ranking=a.ranking,
                 author_id=str(a.author_id)+str(a.press_id),
                 press_id=a.press_id,
+                story_summary=None
             ) for a in new_articles
         )
 

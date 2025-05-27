@@ -1,11 +1,12 @@
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
-from app.models import Article, NewsChat
+from app.models import Article, NewsChat, StorySummary
 from typing import List
 import ast
 import uuid
 import re
+import json
 
 load_dotenv()
 
@@ -67,6 +68,70 @@ def generate_chat(article: Article, API_KEY) -> List[NewsChat]:
 
     return news_chats
 
+
+def generate_narrative(article: Article, API_KEY) -> StorySummary:
+    """
+    Generate a chat summary for the given article using OpenAI's API.
+    
+    Args:
+        article (Article): The article for which to generate the chat summary.
+    
+    Returns:
+        NewsChat: The generated chat summary.
+    """
+    client = OpenAI(api_key=API_KEY)
+
+    prompt = (
+        '다음은 뉴스 기사입니다. 이 기사를 일상적인 이야기에 비유해서 이해하기 쉽게 써주세요. 같은 흐름을 이해하기 더 쉬운 상황으로 단순화해서 작성해주세요.\n'
+        '- 비유 네러티브에서 기사의 키워드와 대응되는 dictionary도 작성해주세요.\n'
+        '- dictionary에서 비유 용어와 실제 용어가 교체되는 단어는 단어의 길이가 같도록 whitespace로 앞뒤를 꾸며주세요.\n'
+        '- 정보의 흐름은 기사 순서를 따라가며 너무 과장되지 않도록 하세요.\n'
+        '- 출력은 아래 형식의 JSON 배열로만 하세요. JSON 외 출력은 하지 마세요.\n'
+        '{"narrative": content, "dictionary": {"비유 용어": "실제 용어"}} 형태로 작성해주세요.\n'
+        '다음은 기사 내용입니다:\n'
+        f'{article.content}'
+    )
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are an article-to-narrative converter."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+    content = response.choices[0].message.content
+    narrative = ""
+    dictionary = {}
+    data = None
+    if content:
+        try:
+            data = json.loads(content)
+        except json.JSONDecodeError as e:
+            print(f"JSON decode error: {e}")
+            print(f"Raw content received from OpenAI:\n{content}")
+            return None  # or handle as appropriate
+    else:
+        print("No content received from OpenAI.")
+        return None
+    print(data)
+    if isinstance(data, list) and data:
+        item= data[0]
+        narrative = item.get("narrative", "")
+        dictionary = item.get("dictionary", {})
+    elif isinstance(data, dict):
+        narrative = data.get("narrative", "")
+        dictionary = data.get("dictionary", {})
+
+    print(f"Generated narrative: {narrative}")
+    print(f"Generated dictionary: {dictionary}")
+
+    return StorySummary(
+        id=uuid.uuid4(),
+        article_id=article.id,
+        story=narrative,
+        dictionary=dictionary
+    )
+
+  
 def generate_keywords(title_list: List[str], API_KEY) -> dict:
     client = OpenAI(api_key=API_KEY)
 

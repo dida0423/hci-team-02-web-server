@@ -75,8 +75,17 @@ def get_article_summary(id: uuid.UUID, session: SessionDep):
         session.refresh(article)
     else:
         print("summary found!")
-    
-    return article
+
+    if not article.story_summary:
+        print("generating story summary")
+        create_summary(article, session)    
+        session.refresh(article)
+    try:
+        return article
+    except Exception as e:
+        print("!!!!!!")
+        print(f"Error retrieving article summary: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 # 오늘의 키워드
 @router.post("/keywords")
