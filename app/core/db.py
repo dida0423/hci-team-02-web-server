@@ -40,6 +40,8 @@ DB_PASSWORD = os.getenv("DB_PASSWORD") or "postgres"
 
 SQLALCHEMY_DATABASE_URI = f"{DB_DRIVER}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
+API_KEY = os.getenv("API_KEY")
+
 
 def initialize_database(DB_NAME: str, DB_USER: str, DB_PASSWORD: str, DB_HOST: str, DB_PORT: str) -> None:
     # Connect to default 'postgres' database
