@@ -35,7 +35,6 @@ DB_USER = os.getenv("DB_USER") or "user"
 DB_HOST = os.getenv("DB_HOST") or "localhost"
 DB_PORT = os.getenv("DB_PORT") or "5432"
 DB_DRIVER = os.getenv("DB_DRIVER") or "postgresql+psycopg2"
-API_KEY = os.getenv("API_KEY")
 
 DB_PASSWORD = os.getenv("DB_PASSWORD") or "postgres"
 
@@ -302,8 +301,6 @@ if crawl_enabled and session:
 
         print("Complete!")
 
-        crawl_enabled = False
-
     except Exception as e:
         print(f"Error during crawling: {e}")
         exit(-1)
@@ -313,5 +310,3 @@ if session:
         session.close()
     except Exception as e:
         print(f"Error closing session: {e}")
-
-
