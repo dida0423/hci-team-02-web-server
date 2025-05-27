@@ -6,7 +6,7 @@ import uuid
 from app.api.deps import SessionDep
 from sqlalchemy import select
 import json
-from app.core.db import create_news_chat, create_keyword_summary, create_highlighted_article, update_article_bias
+from app.core.db import create_news_chat, create_keyword_summary, create_highlighted_article, update_article_bias, create_summary
 from typing import List
 from fastapi import Body
 
