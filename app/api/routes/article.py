@@ -32,7 +32,7 @@ def get_articles(page: int, db: SessionDep):
 
     return articles
 
-@router.get("/{id}")
+@router.get("/{id}", response_model=ArticleResponse)
 def get_article(id: uuid.UUID, db: SessionDep):
     """
     Get article by id
