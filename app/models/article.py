@@ -5,7 +5,6 @@ from app.models.base import Base
 from sqlalchemy.dialects.postgresql import UUID
 from app.models.author import Author
 from app.models.press import Press
-from app.models.newschat import NewsChat
 
 
 class Article(Base):
@@ -27,6 +26,9 @@ class Article(Base):
     press_id = Column(String, ForeignKey('press.id'), nullable=False)
     author = relationship("Author", back_populates="articles")
     press = relationship("Press", back_populates="articles")
+    
+    media_bias = Column(String(10), nullable=True)
+    reporting_bias = Column(String(10), nullable=True)
 
     chat_lines = relationship("NewsChat", back_populates="article")
     story_summary = relationship("StorySummary", back_populates="article", uselist=False)

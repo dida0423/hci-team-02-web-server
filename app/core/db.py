@@ -11,11 +11,15 @@ from app.models.article import Article
 from app.models.author import Author
 from app.models.press import Press
 from app.models.newschat import NewsChat
+from app.models.keyword import KeywordSummary
+from app.models.highlight import HighlightedArticle
 import uuid
 from app.core.util import dotdict
 import json
 from typing import List
-from app.util.AI import generate_chat, generate_narrative
+
+from app.util.AI import generate_chat, generate_highlighted_article, generate_keywords, detect_article_bias
+from datetime import datetime, timedelta, generate_narrative
 
 crawl_enabled = os.getenv("CRAWL", "false").lower() == "true"
 db_init_enabled = os.getenv("DB", "false").lower() == "true"
@@ -31,14 +35,17 @@ DB_USER = os.getenv("DB_USER") or "user"
 DB_HOST = os.getenv("DB_HOST") or "localhost"
 DB_PORT = os.getenv("DB_PORT") or "5432"
 DB_DRIVER = os.getenv("DB_DRIVER") or "postgresql+psycopg2"
+
+DB_PASSWORD = os.getenv("DB_PASSWORD") or "postgres"
+
+SQLALCHEMY_DATABASE_URI = f"{DB_DRIVER}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
 API_KEY = os.getenv("API_KEY")
 
-SQLALCHEMY_DATABASE_URI = f"{DB_DRIVER}://{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
-
-def initialize_database(DB_NAME: str, DB_USER: str, DB_HOST: str, DB_PORT: str) -> None:
+def initialize_database(DB_NAME: str, DB_USER: str, DB_PASSWORD: str, DB_HOST: str, DB_PORT: str) -> None:
     # Connect to default 'postgres' database
-    conn = psycopg2.connect(dbname="postgres", user=DB_USER, host=DB_HOST, port=DB_PORT)
+    conn = psycopg2.connect(dbname="postgres", user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT)
     conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)  # Needed to CREATE DATABASE
 
     cursor = conn.cursor()
@@ -109,9 +116,88 @@ def create_summary(article: Article, session: Session) -> Article:
 
     return article
 
+# 오늘의 키워드
+def create_keyword_summary(session: Session) -> dict:
+    now = datetime.now()
+    start_time = now - timedelta(hours=24)
+
+    # 24시간 이내 기사 제목 수집
+    #titles = session.query(Article.title).filter(Article.published_at >= start_time).all()
+    titles = session.query(Article.title).all()
+    titles = [t[0] for t in titles]
+
+    if not titles:
+        return {"error": "No recent articles found."}
+
+    today = now.date()
+    existing = session.query(KeywordSummary).filter(KeywordSummary.date == today).first()
+
+    if existing:
+        print("[DEBUG] 오늘 키워드 이미 존재")
+        return existing.keywords
+
+    result = generate_keywords(titles, API_KEY)
+
+    keyword_entry = KeywordSummary(date=today, keywords=result)
+
+    try:
+        session.add(keyword_entry)
+        session.commit()
+        print("[DEBUG] DB 저장 완료")
+    except Exception as e:
+        print(f"Error saving keywords: {e}")
+        session.rollback()
+
+    return result
+
+# 집중 읽기 모드
+def create_highlighted_article(article: Article, session: Session) -> str:
+    existing = session.query(HighlightedArticle).filter(HighlightedArticle.article_id == article.id).first()
+    if existing:
+        return existing.highlighted_text
+    
+    highlighted_text = generate_highlighted_article(article, API_KEY)
+
+    new_entry = HighlightedArticle(article_id=article.id, highlighted_text=highlighted_text)
+
+    try:
+        session.add(new_entry)
+        session.commit()
+    except Exception as e:
+        print(f"Error saving highlighted article: {e}")
+        session.rollback()
+
+    return highlighted_text
+
+# 편향 감지
+def update_article_bias(article: Article, session: Session) -> dict:
+    # 정치 기사 확인
+    if article.genre != "정치":
+        return {"media_bias": None, "reporting_bias": None}
+    
+    if article.media_bias is not None and article.reporting_bias is not None:
+        return {"media_bias": article.media_bias, "reporting_bias": article.reporting_bias}
+
+    media_name = article.press.name
+    content = article.content
+
+    bias_result = detect_article_bias(media_name, content, API_KEY)
+
+    article.media_bias = bias_result["media_bias"]
+    article.reporting_bias = bias_result["reporting_bias"]
+
+    try:
+        session.commit()
+        print("[DEBUG] 기사 편향 정보 업데이트 완료")
+    except Exception as e:
+        print(f"[ERROR] 편향 정보 업데이트 실패: {e}")
+        session.rollback()
+
+    return bias_result
+
 if db_init_enabled:
     try:
-        initialize_database(DB_NAME, DB_USER, DB_HOST, DB_PORT)
+        initialize_database(DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT)
     except Exception as e:
         pass
 
@@ -128,7 +214,7 @@ except Exception as e:
 if crawl_enabled and session:
     try:
         try:
-            initialize_database(DB_NAME, DB_USER, DB_HOST, DB_PORT)
+            initialize_database(DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT)
         except Exception as e:
             print(f"Error initializing database: {e}")
             pass
@@ -233,8 +319,6 @@ if crawl_enabled and session:
 
         print("Complete!")
 
-        crawl_enabled = False
-
     except Exception as e:
         print(f"Error during crawling: {e}")
         exit(-1)
@@ -244,5 +328,3 @@ if session:
         session.close()
     except Exception as e:
         print(f"Error closing session: {e}")
-
-

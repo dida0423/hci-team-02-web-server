@@ -6,6 +6,11 @@ from app.models.base import Base
 
 from alembic import context
 
+from dotenv import load_dotenv
+import os
+from app.models.highlight import HighlightedArticle
+from app.models.keyword import KeywordSummary
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
@@ -25,7 +30,16 @@ target_metadata = Base.metadata
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
+load_dotenv()
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_HOST = os.getenv("DB_HOST")
+DB_PORT = os.getenv("DB_PORT")
+DB_NAME = os.getenv("DB_NAME")
+DB_DRIVER = os.getenv("DB_DRIVER", "postgresql+psycopg2")
 
+SQLALCHEMY_DATABASE_URL = f"{DB_DRIVER}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+config.set_main_option("sqlalchemy.url", SQLALCHEMY_DATABASE_URL)
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
