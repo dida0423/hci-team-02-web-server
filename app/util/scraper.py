@@ -117,7 +117,10 @@ def extract_data(soup: _bs4.BeautifulSoup) -> tuple[list, list]:
             title = title_tag.get_text(strip=True)
             url = title_tag.get("href")
         else:
+            print("-------------")
             print("No title or URL found for item.")
+            print(item)
+            print("-------------")
             continue
 
         press_id = str(url)[33:36]
@@ -126,8 +129,10 @@ def extract_data(soup: _bs4.BeautifulSoup) -> tuple[list, list]:
         content_tag = article_soup.find('article', id="dic_area")
 
         if not content_tag or not isinstance(content_tag, _bs4.element.Tag):
+            print("-------------")
             print("No content found for article.")
             print(url)
+            print("-------------")
             continue
 
 
@@ -183,8 +188,10 @@ def extract_data(soup: _bs4.BeautifulSoup) -> tuple[list, list]:
                 
         author_tag = article_soup.find('em', class_='media_journalistcard_summary_name_text')
         if not author_tag:
+            print("-------------")
             print("No author found for article.")
             print(url)
+            print("-------------")
             continue
 
         
@@ -195,8 +202,11 @@ def extract_data(soup: _bs4.BeautifulSoup) -> tuple[list, list]:
             author_id = str(author_url)[39:]
             press_id = str(author_url)[35:38]
         else:
+            print("-------------")
             print("No author URL found for article.")
+            print(a_tag)
             print(url)
+            print("-------------")
             continue
 
         if isinstance(like_count, int) and isinstance(comment_count, int):
