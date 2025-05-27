@@ -9,6 +9,7 @@ import json
 from app.core.db import create_news_chat, create_keyword_summary, create_highlighted_article, update_article_bias, create_summary
 from typing import List
 from fastapi import Body
+from enum import Enum
 
 router = APIRouter(prefix="/article", tags=["article"])
 
@@ -30,22 +31,22 @@ def get_articles(page: int, db: SessionDep):
 
     return articles
 
-@router.get("/{id}", response_model=ArticleResponse)
-def get_article(id: uuid.UUID, db: SessionDep):
-    """
-    Get article by id
-    """
-    retrieve_statement = (
-        select(Article)
-        .where(Article.id == id)
-    )
+# @router.get("/{id}", response_model=ArticleResponse)
+# def get_article(id: uuid.UUID, db: SessionDep):
+#     """
+#     Get article by id
+#     """
+#     retrieve_statement = (
+#         select(Article)
+#         .where(Article.id == id)
+#     )
 
-    article = db.execute(retrieve_statement).scalars().first()
+#     article = db.execute(retrieve_statement).scalars().first()
 
-    if not article:
-        raise HTTPException(status_code=404, detail="Article not found")
+#     if not article:
+#         raise HTTPException(status_code=404, detail="Article not found")
     
-    return article
+#     return article
 
 @router.get("/view/{id}", response_model=ArticleResponse)
 def get_article_summary(id: uuid.UUID, session: SessionDep):
@@ -124,3 +125,24 @@ def get_article_bias(id: uuid.UUID, session: SessionDep):
         raise HTTPException(status_code=500, detail=f"Bias detection failed: {e}")
 
     return result
+
+class Genre(str, Enum):
+    LIVING = "생활"
+    POLITICS = "정치"
+    ECONOMY = "경제"
+    IT = "IT"
+    WORLD = "세계"
+    EDITORIAL = "사설/칼럼"
+    SOCIETY = "사회"
+
+@router.get("/genre/{genre}", response_model=list[ArticleResponse])
+def get_articles_by_genre(genre: Genre, db: SessionDep):
+    """
+    Get articles by genre
+    """
+    articles = db.query(Article).filter(Article.genre == genre).order_by(Article.activity_score.desc()).all()
+
+    if not articles:
+        raise HTTPException(status_code=404, detail="No articles found for this genre")
+    
+    return articles
