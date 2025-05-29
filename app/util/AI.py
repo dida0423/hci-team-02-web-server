@@ -82,15 +82,29 @@ def generate_narrative(article: Article, API_KEY) -> StorySummary:
     client = OpenAI(api_key=API_KEY)
 
     prompt = (
-        '다음은 뉴스 기사입니다. 이 기사를 일상적인 이야기에 비유해서 이해하기 쉽게 써주세요. 같은 흐름을 이해하기 더 쉬운 상황으로 단순화해서 작성해주세요.\n'
-        '- 비유 네러티브에서 기사의 키워드와 대응되는 dictionary도 작성해주세요.\n'
-        '- dictionary에서 비유 용어와 실제 용어가 교체되는 단어는 단어의 길이가 같도록 whitespace로 앞뒤를 꾸며주세요.\n'
-        '- 정보의 흐름은 기사 순서를 따라가며 너무 과장되지 않도록 하세요.\n'
-        '- 출력은 아래 형식의 JSON 배열로만 하세요. JSON 외 출력은 하지 마세요.\n'
-        '{"narrative": content, "dictionary": {"비유 용어": "실제 용어"}} 형태로 작성해주세요.\n'
-        '다음은 기사 내용입니다:\n'
-        f'{article.content}'
-    )
+        '다음은 뉴스 기사입니다. 이 기사를 일상적인 이야기로 비유해서 독자가 더 쉽게 이해할 수 있도록 재작성해주세요.\n'
+        '\n'
+        '요구 사항:\n'
+        '1. 반드시 현실과 다른 **비유적 상황**으로 바꿔 설명해주세요. (예: 회사, 마을, 학교, 동물 이야기 등)\n'
+        '2. 기사에 등장하는 **실제 인물, 단체, 국가 이름은 절대 그대로 사용하지 마세요.**\n'
+        '3. 영어 단어나 외래어를 쓰지 마세요. 모든 표현은 자연스러운 한국어로만 작성하세요.\n'
+        '4. 사건의 긍정 또는 부정 감정의 흐름을 비유에서도 동일하게 유지하세요.\n'
+        '5. 반드시 아래와 같은 JSON 형식으로만 출력하세요 (기타 문장, 설명, 개행 금지):\n\n'
+        '```json\n'
+        '[\n'
+        '  {\n'
+        '    "narrative": "<비유 본문 내용>",\n'
+        '    "dictionary": {\n'
+        '      " 비유용어1 ": "실제용어1",\n'
+        '      " 비유용어2 ": "실제용어2"\n'
+        '    }\n'
+        '  }\n'
+        ']\n'
+        '```\n\n'
+        '※ narrative는 한글로 된 비유 이야기이며, dictionary는 실제 개념과의 매핑입니다.\n\n'
+        f'다음은 기사 내용입니다:\n{article.content}'
+        )
+    
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
@@ -99,6 +113,12 @@ def generate_narrative(article: Article, API_KEY) -> StorySummary:
         ]
     )
     content = response.choices[0].message.content
+    # content 정제
+    if content.startswith("```json"):
+        content = content.removeprefix("```json").removesuffix("```").strip()
+    elif content.startswith("```"):
+        content = content.removeprefix("```").removesuffix("```").strip()
+
     narrative = ""
     dictionary = {}
     data = None
