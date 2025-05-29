@@ -141,9 +141,19 @@ def generate_keywords(title_list: List[str], API_KEY) -> dict:
 다음은 오늘 하루 동안 주요 언론사에서 보도한 뉴스 기사들의 제목입니다.
 기사들을 종합해볼 때, 오늘의 핵심 키워드(주제어)와 그 중요도에 대해 답해주세요.
 
-- 단어 최대 10개
-- 너무 일반적인 단어는 피하고, 사회적으로 중요하거나 빈도가 높은 이슈 중심
-- 단어와 중요도(1~5)를 JSON 형식으로 반환
+- 단어 5개
+- 너무 일반적인 단어는 피하고, 빈도가 높은 이슈 중심
+- 단어와 중요도(1~5)를 아래와 같은 JSON 형식으로 반환
+
+{{
+  "keywords": [
+    {{"keyword": "키워드1", "score": "<중요도>"}},
+    {{"keyword": "키워드2", "score": "<중요도>"}},
+    {{"keyword": "키워드3", "score": "<중요도>"}},
+    {{"keyword": "키워드4", "score": "<중요도>"}},
+    {{"keyword": "키워드5", "score": "<중요도>"}}
+  ]
+}}
 
 기사 제목 목록:
 {formatted_titles}
@@ -158,8 +168,15 @@ def generate_keywords(title_list: List[str], API_KEY) -> dict:
     )
 
     content = response.choices[0].message.content
+    
+    print("[DEBUG] GPT 응답 원문:\n", content)
+
     content = content.strip().removeprefix("```json").removesuffix("```").strip() if content else ""
-    return ast.literal_eval(content)
+    try:
+        return json.loads(content)
+    except Exception as e:
+        print(f"[ERROR] JSON 파싱 실패: {e}")
+        raise
 
 def generate_highlighted_article(article: Article, API_KEY) -> str:
     client = OpenAI(api_key=API_KEY)

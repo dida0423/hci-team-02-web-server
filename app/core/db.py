@@ -136,19 +136,37 @@ def create_keyword_summary(session: Session) -> dict:
         print("[DEBUG] 오늘 키워드 이미 존재")
         return existing.keywords
 
-    result = generate_keywords(titles, API_KEY)
+    raw_result = generate_keywords(titles, API_KEY)
+    raw_keywords = raw_result["keywords"]
 
-    keyword_entry = KeywordSummary(date=today, keywords=result)
+    # 각 키워드에 대해 activity_score가 가장 높은 기사 ID 찾기
+    keywords_with_article = []
+    for item in raw_keywords:
+        keyword = item["keyword"]
+        score = item["score"]
+        best_article = (
+            session.query(Article)
+            .filter(Article.title.ilike(f"%{keyword}%"))
+            .order_by(Article.activity_score.desc())
+            .first()
+        )
+        article_id = str(best_article.id) if best_article else None
+        keywords_with_article.append({
+            "keyword": keyword,
+            "score": score,
+            "article_id": article_id
+        })
+
+    keyword_entry = KeywordSummary(date=today, keywords=keywords_with_article)
 
     try:
         session.add(keyword_entry)
         session.commit()
-        print("[DEBUG] DB 저장 완료")
     except Exception as e:
         print(f"Error saving keywords: {e}")
         session.rollback()
 
-    return result
+    return keywords_with_article
 
 # 집중 읽기 모드
 def create_highlighted_article(article: Article, session: Session) -> str:
