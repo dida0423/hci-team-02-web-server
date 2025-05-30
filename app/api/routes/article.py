@@ -132,7 +132,8 @@ class Genre(str, Enum):
     ECONOMY = "경제"
     IT = "IT"
     WORLD = "세계"
-    EDITORIAL = "사설/칼럼"
+    EDITORIAL = "사설칼럼"
+    EDITORIAL2 = "사설/칼럼"
     SOCIETY = "사회"
 
 @router.get("/genre/{genre}", response_model=list[ArticleResponse])
@@ -140,6 +141,8 @@ def get_articles_by_genre(genre: Genre, db: SessionDep):
     """
     Get articles by genre
     """
+    if genre == Genre.EDITORIAL:
+        genre = Genre.EDITORIAL2
     articles = db.query(Article).filter(Article.genre == genre).order_by(Article.activity_score.desc()).all()
 
     if not articles:
