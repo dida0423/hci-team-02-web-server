@@ -31,7 +31,7 @@ load_dotenv(override=True)
 
 # Check if the environment variables are set for prod
 DB_NAME = os.getenv("DB_NAME") or "hcidb"
-DB_USER = os.getenv("DB_USER") or "user"
+DB_USER = os.getenv("DB_USER") or "postgres"
 DB_HOST = os.getenv("DB_HOST") or "localhost"
 DB_PORT = os.getenv("DB_PORT") or "5432"
 DB_DRIVER = os.getenv("DB_DRIVER") or "postgresql+psycopg2"
@@ -191,6 +191,7 @@ def create_highlighted_article(article: Article, session: Session) -> str:
 def update_article_bias(article: Article, session: Session) -> dict:
     # 정치 기사 확인
     if article.genre != "정치":
+        print("[DEBUG] 정치 기사 아님")
         return {"media_bias": None, "reporting_bias": None}
     
     if article.media_bias is not None and article.reporting_bias is not None:
