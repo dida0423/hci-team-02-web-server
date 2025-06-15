@@ -13,6 +13,7 @@ from enum import Enum
 
 router = APIRouter(prefix="/article", tags=["article"])
 
+# Get articles in batches of 10
 @router.get("/page{page}", response_model=list[ArticleResponse])
 def get_articles(page: int, db: SessionDep):
     """
@@ -21,7 +22,6 @@ def get_articles(page: int, db: SessionDep):
     page -= 1
     if page < 0 or page > 3:
         raise HTTPException(status_code=400, detail="Page must be between 1 and 4")
-    # select all articles with authors and press
     articles = db.query(Article).options(
         joinedload(Article.author).joinedload(Author.press)
     ).order_by(Article.activity_score.desc()).offset(page * 10).limit(10).all()
@@ -31,23 +31,7 @@ def get_articles(page: int, db: SessionDep):
 
     return articles
 
-# @router.get("/{id}", response_model=ArticleResponse)
-# def get_article(id: uuid.UUID, db: SessionDep):
-#     """
-#     Get article by id
-#     """
-#     retrieve_statement = (
-#         select(Article)
-#         .where(Article.id == id)
-#     )
-
-#     article = db.execute(retrieve_statement).scalars().first()
-
-#     if not article:
-#         raise HTTPException(status_code=404, detail="Article not found")
-    
-#     return article
-
+# Fetch article with narrative and talk format
 @router.get("/view/{id}", response_model=ArticleResponse)
 def get_article_summary(id: uuid.UUID, session: SessionDep):
     """
@@ -136,6 +120,7 @@ class Genre(str, Enum):
     EDITORIAL2 = "사설/칼럼"
     SOCIETY = "사회"
 
+# Fetch article by genre
 @router.get("/genre/{genre}", response_model=list[ArticleResponse])
 def get_articles_by_genre(genre: Genre, db: SessionDep):
     """
@@ -143,7 +128,7 @@ def get_articles_by_genre(genre: Genre, db: SessionDep):
     """
     if genre == Genre.EDITORIAL:
         genre = Genre.EDITORIAL2
-    articles = db.query(Article).filter(Article.genre == genre).order_by(Article.activity_score.desc()).all()
+    articles = db.query(Article).filter(Article.genre == genre).order_by(Article.activity_score.desc()).limit(10).all()
 
     if not articles:
         raise HTTPException(status_code=404, detail="No articles found for this genre")

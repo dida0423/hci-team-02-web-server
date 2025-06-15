@@ -12,7 +12,7 @@ load_dotenv()
 
 API_KEY = os.getenv("OPENAI_API_KEY")
 
-
+# Generate chat view
 def generate_chat(article: Article, API_KEY) -> List[NewsChat]:
     """
     Generate a chat summary for the given article using OpenAI's API.
@@ -68,7 +68,7 @@ def generate_chat(article: Article, API_KEY) -> List[NewsChat]:
 
     return news_chats
 
-
+# Generate narritive view
 def generate_narrative(article: Article, API_KEY) -> StorySummary:
     """
     Generate a chat summary for the given article using OpenAI's API.
@@ -113,7 +113,7 @@ def generate_narrative(article: Article, API_KEY) -> StorySummary:
         ]
     )
     content = response.choices[0].message.content
-    # content 정제
+
     if content.startswith("```json"):
         content = content.removeprefix("```json").removesuffix("```").strip()
     elif content.startswith("```"):
@@ -128,7 +128,7 @@ def generate_narrative(article: Article, API_KEY) -> StorySummary:
         except json.JSONDecodeError as e:
             print(f"JSON decode error: {e}")
             print(f"Raw content received from OpenAI:\n{content}")
-            return None  # or handle as appropriate
+            return None
     else:
         print("No content received from OpenAI.")
         return None
@@ -151,7 +151,7 @@ def generate_narrative(article: Article, API_KEY) -> StorySummary:
         dictionary=dictionary
     )
 
-  
+# Generate keywords
 def generate_keywords(title_list: List[str], API_KEY) -> dict:
     client = OpenAI(api_key=API_KEY)
 
@@ -198,6 +198,7 @@ def generate_keywords(title_list: List[str], API_KEY) -> dict:
         print(f"[ERROR] JSON 파싱 실패: {e}")
         raise
 
+# Generate article highlights
 def generate_highlighted_article(article: Article, API_KEY) -> str:
     client = OpenAI(api_key=API_KEY)
 
@@ -229,6 +230,7 @@ def generate_highlighted_article(article: Article, API_KEY) -> str:
 
     return response.choices[0].message.content.strip() if response.choices[0].message.content else ""
 
+# Detect bias
 def detect_article_bias(media_name: str, content: str, API_KEY: str) -> dict:
     from openai import OpenAI
     import ast

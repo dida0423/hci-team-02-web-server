@@ -21,12 +21,13 @@ from typing import List
 from app.util.AI import generate_chat, generate_narrative, generate_highlighted_article, generate_keywords, detect_article_bias
 from datetime import datetime, timedelta
 
+# Check for crawling flags
 crawl_enabled = os.getenv("CRAWL", "false").lower() == "true"
 db_init_enabled = os.getenv("DB", "false").lower() == "true"
 article_json_path = os.getenv("ARTICLE_JSON_PATH", None)
 press_id_json_path = os.getenv("PRESS_ID_JSON_PATH", None)
 
-
+# Fetch environmental variables
 load_dotenv(override=True)
 
 # Check if the environment variables are set for prod
@@ -42,13 +43,14 @@ SQLALCHEMY_DATABASE_URI = f"{DB_DRIVER}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_
 
 API_KEY = os.getenv("API_KEY")
 
-
+# Initialize DB
 def initialize_database(DB_NAME: str, DB_USER: str, DB_PASSWORD: str, DB_HOST: str, DB_PORT: str) -> None:
     # Connect to default 'postgres' database
     conn = psycopg2.connect(dbname="postgres", user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT)
-    conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)  # Needed to CREATE DATABASE
+    conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 
     cursor = conn.cursor()
+    # Drop and recreate db
     try:
         cursor.execute(f"DROP DATABASE IF EXISTS {DB_NAME};")
         print(f"Database '{DB_NAME}' dropped.")
@@ -86,6 +88,7 @@ def initialize_database(DB_NAME: str, DB_USER: str, DB_PASSWORD: str, DB_HOST: s
         cursor.close()
         conn.close()
 
+# Create news chat and add to DB
 def create_news_chat(article: Article, session: Session) -> List[NewsChat]:
     """
     Create a new news chat entry in the database.
@@ -101,6 +104,7 @@ def create_news_chat(article: Article, session: Session) -> List[NewsChat]:
 
     return chat_list
 
+# Create summary and add to DB
 def create_summary(article: Article, session: Session) -> Article:
     """
     Create a summary for the article.
@@ -121,8 +125,6 @@ def create_keyword_summary(session: Session) -> dict:
     now = datetime.now()
     start_time = now - timedelta(hours=24)
 
-    # 24시간 이내 기사 제목 수집
-    #titles = session.query(Article.title).filter(Article.published_at >= start_time).all()
     titles = session.query(Article.title).all()
     titles = [t[0] for t in titles]
 
@@ -219,7 +221,8 @@ if db_init_enabled:
     except Exception as e:
         pass
 
-
+# Main
+# Create session
 engine = create_engine(SQLALCHEMY_DATABASE_URI)
 
 try:
@@ -229,6 +232,7 @@ except Exception as e:
     print(f"Error creating session: {e}")
     exit(-1)
 
+# Initialize DB and crawl if flag set
 if crawl_enabled and session:
     try:
         try:
@@ -236,7 +240,8 @@ if crawl_enabled and session:
         except Exception as e:
             print(f"Error initializing database: {e}")
             pass
-
+        
+        # Use precrawled data if flag set, otherwise write to file
         if article_json_path and press_id_json_path:
             with open(article_json_path, "r", encoding="utf-8") as f:
                 article_data = json.load(f)
@@ -251,7 +256,7 @@ if crawl_enabled and session:
 
             print("Sample data (First 3):", article_data[:3])
 
-            # Write to file
+            # Write to file ( Press Data )
             with open("article_data.json", "w", encoding="utf-8") as f:
                 json.dump(article_data, f, ensure_ascii=False, indent=4)
             f.close()
@@ -260,12 +265,11 @@ if crawl_enabled and session:
             f.close()
             print("Sample data written to file.")
 
-        # Step 1: Collect all candidate URLs (or other unique keys)
+        # Parse and save article html
         candidate_urls = [dotdict(a).url for a in article_data]
 
         candidate_authors = [dotdict(a).author_id for a in article_data]
 
-        # Step 3: Filter out duplicates in Python
         new_articles = []
 
         for a in article_data:
@@ -290,8 +294,6 @@ if crawl_enabled and session:
         ])
         
         print("Inserting press")
-
-        # print(list(new_press))
 
         session.add_all(
             Press(

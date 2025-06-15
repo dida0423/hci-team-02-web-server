@@ -35,7 +35,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 80
 ```
 CRAWL=true uvicorn app.main:app --host 0.0.0.0 --port 80
 ```
-### Using Pre-crawled Data (May 23)
+### Using Pre-crawled Data (June 16)
 Mac
 ```
 ARTICLE_JSON_PATH=article_data.json PRESS_ID_JSON_PATH=press_logo_set.json CRAWL=true uvicorn app.main:app --host 0.0.0.0 --port 80

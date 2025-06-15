@@ -14,6 +14,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 import time
 
+# Get article html for dynamically loaded elements
 def get_dynamic_article_html(url: str) -> BeautifulSoup:
     options = Options()
     options.add_argument("--headless")  # run in background
@@ -44,7 +45,7 @@ def get_dynamic_article_html(url: str) -> BeautifulSoup:
         driver.quit()
         raise 
 
-
+# Get soup from link
 def parse_html_from_link(url: str) -> _bs4.BeautifulSoup:
     """
     Parses the HTML content and returns a BeautifulSoup object.
@@ -59,7 +60,7 @@ def parse_html_from_link(url: str) -> _bs4.BeautifulSoup:
     soup = _bs4.BeautifulSoup(html, 'html.parser')
     return soup
 
-
+# Extract data
 def extract_data(soup: _bs4.BeautifulSoup) -> tuple[list, list]:
     # Find all press companies
     press_companies = soup.find_all('a', class_="rankingnews_box_head nclicks('RBP.rnkpname')")
@@ -244,11 +245,13 @@ def extract_data(soup: _bs4.BeautifulSoup) -> tuple[list, list]:
     
     return news_list, list(press_logo_dict)
 
+# Crawl for articles
 def crawl():
     soup = parse_html_from_link('https://news.naver.com/main/ranking/popularDay.naver')
     data = extract_data(soup)
     return data
 
+# Testing
 # ls = crawl()
 # print(json.dumps(ls, sort_keys=True, indent=4, ensure_ascii=False))
 # print(f"Total articles: {len(ls)}")
