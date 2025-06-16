@@ -2,8 +2,8 @@
 2025 SNU HCI Spring Semester Team 2
 
 ## Contributors:
-- <a href="">김다인</a>
-- <a href="">오정윤</a>
+- <a href="https://github.com/dida0423">김다인</a>
+- <a href="https://github.com/nyunn2">오정윤</a>
     
 
 ## Project Set-up:
@@ -36,11 +36,6 @@ uvicorn app.main:app --host 0.0.0.0 --port 80
 CRAWL=true uvicorn app.main:app --host 0.0.0.0 --port 80
 ```
 ### Using Pre-crawled Data (June 16)
-Mac
 ```
 ARTICLE_JSON_PATH=article_data.json PRESS_ID_JSON_PATH=press_logo_set.json CRAWL=true uvicorn app.main:app --host 0.0.0.0 --port 80
-```
-Windows
-```
-$env:ARTICLE_JSON_PATH="./article_data.json"; $env:PRESS_ID_JSON_PATH="./press_logo_set.json"; $env:CRAWL="true"; uvicorn app.main:app --host 0.0.0.0 --port 80
 ```
