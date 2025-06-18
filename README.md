@@ -2,6 +2,7 @@
 2025 SNU HCI Spring Semester Team 2
 > [!NOTE]
 > http://52.78.59.140 에서 최종 프로토타입을 확인할 수 있습니다.
+> 해당 프로토타입은 iPhone 15 기준으로 제작되었습니다.
 
 ## Contributors:
 - <a href="https://github.com/dida0423">김다인</a>
